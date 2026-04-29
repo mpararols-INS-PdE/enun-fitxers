@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activitat: Carregar personatges des d’un fitxer (Java)</title>
+    <link rel="stylesheet" href="styles.css">
+    <link
+        id="hljs-theme"
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+    >
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <div class="header-copy">
+                <h1>Activitat: Carregar personatges des d’un fitxer (Java)</h1>
+                <p class="subtitle">Activitat pràctica guiada per afegir <strong>lectura de fitxers</strong> al projecte de personatges, fent que l’<code>Academia</code> pugui <strong>carregar personatges</strong> des d’un fitxer de text.</p>
+            </div>
+            <button class="theme-toggle" type="button" aria-pressed="false" aria-label="Canvia al tema clar">
+                <span class="theme-toggle-icon" aria-hidden="true">☀️</span>
+                <span class="theme-toggle-label">Tema clar</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <section class="card intro-card">
+            <h2 id="contextualitzacio">Contextualització</h2>
+            <p>Fins ara, els personatges s’han creat “a mà” des del <code>main(...)</code>. Això està bé per provar, però no és escalable ni realista: en un projecte real, les dades acostumen a venir de fora (fitxers, bases de dades, APIs…).</p>
+            <p>En aquesta activitat, ampliareu la classe <code>Academia</code> perquè pugui <strong>carregar una llista de personatges</strong> des d’un fitxer i incorporar-los al repositori intern.</p>
+            <p>L’objectiu és practicar:</p>
+            <ul>
+            <li>lectura i processament de fitxers</li>
+            <li>validació de dades</li>
+            <li>tractament d’errors (fitxer inexistent, línies mal formades…)</li>
+            <li>ús de col·leccions i factorització de codi</li>
+            </ul>
+        </section>
+
+        <section class="card intro-card">
+            <h2 id="objectius-daprenentatge">Objectius d’aprenentatge</h2>
+            <p class="phase-intro">Els objectius estan agrupats per competències perquè es vegi més clar què practicareu al llarg de l’activitat.</p>
+            <div class="objectives-grid">
+                    <article class="objective-card">
+                        <h3>Lectura de fitxers</h3>
+                        <p>Llegir un fitxer línia a línia amb <code>Files.readAllLines(...)</code> o <code>BufferedReader</code>.</p>
+                    </article>
+                    <article class="objective-card">
+                        <h3>Parsing de dades</h3>
+                        <p>Transformar text (CSV senzill) en objectes del domini (<code>Guerrer</code>, <code>Mag</code>, <code>Arquer</code>).</p>
+                    </article>
+                    <article class="objective-card">
+                        <h3>Robustesa i validació</h3>
+                        <p>Gestionar errors sense “petar” el programa: línies buides, comentaris, valors no numèrics, tipus desconeguts…</p>
+                    </article>
+                    <article class="objective-card">
+                        <h3>Disseny net</h3>
+                        <p>Separar responsabilitats: mètode de lectura, mètode de parsing d’una línia, i creació d’objectes.</p>
+                    </article>
+            </div>
+
+        </section>
+
+        <details class="card" data-accordion-group="phases" open>
+            <summary class="phase-summary">
+                <div class="phase-heading">
+                    <span class="phase-badge">Format</span>
+                    <h2>Format del fitxer (CSV senzill amb <code>;</code>)</h2>
+                </div>
+            </summary>
+            <div class="phase-content">
+                <p class="phase-intro">El fitxer conté <strong>una línia per personatge</strong>, amb aquest format:</p>
+                <pre><code class="language-text">TIPUS;NOM;VIDA;NIVELL;ATRIBUT
+</code></pre>
+                <p>On:</p>
+                <ul>
+                <li><code>TIPUS</code>: <code>GUERRER</code>, <code>MAG</code> o <code>ARQUER</code> (sense accents; majúscules recomanades)</li>
+                <li><code>NOM</code>: text (sense <code>;</code>)</li>
+                <li><code>VIDA</code>: enter (&gt;= 0)</li>
+                <li><code>NIVELL</code>: enter (&gt;= 1)</li>
+                <li><code>ATRIBUT</code>: enter (&gt;= 0) i representa:</li>
+                <li><code>GUERRER</code> → <code>forca</code></li>
+                <li><code>MAG</code> → <code>mana</code></li>
+                <li><code>ARQUER</code> → <code>precisio</code></li>
+                </ul>
+                <h3 id="comentaris-i-linies-buides">Comentaris i línies buides</h3>
+                <ul>
+                <li>Les línies buides s’han d’ignorar.</li>
+                <li>Les línies que comencen per <code>#</code> s’han de considerar comentaris i ignorar-les.</li>
+                </ul>
+                <h3 id="exemple-de-fitxer-personatgescsv">Exemple de fitxer <code>personatges.csv</code></h3>
+                <pre><code class="language-text"># tipus;nom;vida;nivell;atribut
+GUERRER;Thorin;120;10;25
+MAG;Merlina;80;9;38
+ARQUER;Lira;90;8;18
+MAG;Morlina;80;9;38
+</code></pre>
+            <div class="optional-hint"><p>📄 Fitxer d’exemple: <a href="https://drive.google.com/file/d/1es2MFlTZJzDkU6RRxhoIKcU3YxO8y-rw/view?usp=sharing">personatges.csv</a></p></div>
+            </div>
+        </details>
+
+        <details class="card" data-accordion-group="phases">
+            <summary class="phase-summary">
+                <div class="phase-heading">
+                    <span class="phase-badge">FASE 1</span>
+                    <h2>Afegir el mètode de càrrega a <code>Academia</code></h2>
+                </div>
+            </summary>
+            <div class="phase-content">
+                <p class="phase-intro">Implementeu un mètode a <code>Academia</code> amb una signatura similar a:</p>
+                <pre><code class="language-java">public int carregarDesDeFitxer(String path)
+</code></pre>
+                <p>Requisits mínims:</p>
+                <ol>
+                <li>Llegeix el fitxer indicat per <code>path</code>.</li>
+                <li>Per cada línia vàlida, crea el personatge corresponent i l’afegeix a la col·lecció de l’<code>Academia</code>.</li>
+                <li>Retorna el <strong>nombre de personatges carregats</strong>.</li>
+                </ol>
+                <div class="optional-hint"><p>Si preferiu, podeu sobrecarregar el mètode per acceptar també un <code>Path</code>.</p></div>
+            </div>
+        </details>
+
+        <details class="card" data-accordion-group="phases">
+            <summary class="phase-summary">
+                <div class="phase-heading">
+                    <span class="phase-badge">FASE 2</span>
+                    <h2>Parsing d’una línia</h2>
+                </div>
+            </summary>
+            <div class="phase-content">
+                <p class="phase-intro">Per evitar tenir un mètode massa llarg, creeu un mètode auxiliar (a <code>Academia</code> o en una classe utilitària) que s’encarregui de convertir una línia en un <code>Personatge</code>.</p>
+                <p>Proposta de signatura:</p>
+                <pre><code class="language-java">private Personatge parseLiniaPersonatge(String linia)
+</code></pre>
+                <p>Comportament recomanat:</p>
+                <ul>
+                <li>Si la línia és buida o comentari → retorna <code>null</code>.</li>
+                <li>Si la línia no té 5 camps → retorna <code>null</code> (o llança una excepció controlada, però gestioneu-la a la càrrega).</li>
+                <li>Si els números no es poden parsejar → retorna <code>null</code>.</li>
+                <li>Si <code>TIPUS</code> és desconegut → retorna <code>null</code>.</li>
+                <li>Si tot és correcte → retorna un <code>new Guerrer(...)</code>, <code>new Mag(...)</code> o <code>new Arquer(...)</code>.</li>
+                </ul>
+                <div class="optional-hint"><p>Important: decideix un criteri consistent. Per exemple: “les línies incorrectes s’ignoren però s’informa per consola”.</p></div>
+            </div>
+        </details>
+
+        <details class="card" data-accordion-group="phases">
+            <summary class="phase-summary">
+                <div class="phase-heading">
+                    <span class="phase-badge">FASE 3</span>
+                    <h2>Gestió d’errors i missatges</h2>
+                </div>
+            </summary>
+            <div class="phase-content">
+                <p class="phase-intro">Quan feu lectura de fitxers, poden passar moltes coses. Heu de controlar com a mínim:</p>
+                <ul>
+                <li>Fitxer no trobat / path incorrecte</li>
+                <li>Error d’entrada/sortida (I/O)</li>
+                <li>Línies mal formades</li>
+                </ul>
+                <h3 id="requisits">Requisits</h3>
+                <ol>
+                <li>El programa <strong>no ha de fallar</strong> amb una excepció no controlada quan el fitxer no existeix.</li>
+                <li>Heu de mostrar un missatge útil, per exemple:</li>
+                </ol>
+                <pre><code class="language-text">No s'ha pogut llegir el fitxer: dades/personatges.csv
+</code></pre>
+                <ol start="3">
+                <li>Si una línia és incorrecta, indiqueu el número de línia i el motiu (si ho voleu simplificar, almenys indiqueu que s’ha ignorat):</li>
+                </ol>
+                <pre><code class="language-text">Línia 6 ignorada (format incorrecte): GUERRER;SenseNivell;120
+</code></pre>
+            </div>
+        </details>
+
+        <details class="card" data-accordion-group="phases">
+            <summary class="phase-summary">
+                <div class="phase-heading">
+                    <span class="phase-badge">FASE 4</span>
+                    <h2>Proves des del <code>main</code></h2>
+                </div>
+            </summary>
+            <div class="phase-content">
+                <p class="phase-intro">Al <code>Principal</code> (o un programa de prova equivalent):</p>
+                <ol>
+                <li>Crea una <code>Academia</code>.</li>
+                <li>Carrega personatges des d’un fitxer.</li>
+                <li>Mostra el llistat de personatges carregats.</li>
+                <li>(Opcional) crea un <code>Equip</code> amb alguns personatges carregats i prova alguna funcionalitat existent.</li>
+                </ol>
+                <h3 id="exemple-de-sortida-esperada">Exemple de sortida esperada</h3>
+                <pre><code class="language-text">Carregats 4 personatges des de dades/personatges.csv
+
+Personatges a l'Academia:
+Guerrer: Thorin | Vida: 120 | Nivell: 10 | Forca: 25
+Mag: Merlina | Vida: 80 | Nivell: 9 | Mana: 38
+Arquer: Lira | Vida: 90 | Nivell: 8 | Precisio: 18
+Mag: Morlina | Vida: 80 | Nivell: 9 | Mana: 38
+</code></pre>
+            </div>
+        </details>
+
+        <details class="card bonus-card" data-accordion-group="extensions">
+            <summary class="phase-summary">
+                <div class="phase-heading">
+                    <span class="phase-badge">EXTRA</span>
+                    <h2>Extensions opcionalment recomanades</h2>
+                </div>
+            </summary>
+            <div class="phase-content">
+                <ul>
+                <li><strong>Carregar sense duplicats:</strong> si ja existeix un personatge amb el mateix nom, decideix si s’ignora o s’actualitza.</li>
+                <li><strong>Headers opcionals:</strong> permetre una primera línia amb capçalera <code>tipus;nom;vida;nivell;atribut</code>.</li>
+                <li><strong>Noms amb espais:</strong> assegurar que el <code>trim()</code> s’aplica a cada camp.</li>
+                <li><strong>Resum final:</strong> nombre total de línies llegides, vàlides i ignorades.</li>
+                </ul>
+            </div>
+        </details>
+
+        <details class="card" data-accordion-group="phases">
+            <summary class="phase-summary">
+                <div class="phase-heading">
+                    <span class="phase-badge">Preguntes</span>
+                    <h2>Preguntes de reflexió</h2>
+                </div>
+            </summary>
+            <div class="phase-content">
+                <ol>
+                <li>Per què és millor ignorar una línia incorrecta i continuar (en comptes de parar-ho tot)?</li>
+                <li>Quines validacions t’han semblat imprescindibles quan parses dades d’un fitxer?</li>
+                <li>Quin mètode ha estat més net: “tot en un” o separar lectura/parsing/creació d’objectes?</li>
+                <li>Com canviaria el disseny si el fitxer fos JSON en comptes de CSV?</li>
+                </ol>
+            </div>
+        </details>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/java.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
